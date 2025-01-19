@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\MovieController;
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return view('welcome');
@@ -157,6 +162,91 @@ Route::get('/category/sport', [CategoryController::class, "sport"]);
 Route::get('/category/politic', [CategoryController::class, "politic"]);
 Route::get('/category/entertain', [CategoryController::class, "entertain"]);
 Route::get('/category/auto', [CategoryController::class, "auto"]);
+
+
+
+
+// use App\Models\Product;
+// use Illuminate\Support\Facades\DB;
+
+Route::get('query/sql', function () {
+    $products = DB::select("SELECT * FROM products");
+    // $products = DB::select("SELECT * FROM products WHERE price > 100");
+    return view('query-test', compact('products'));
+});
+
+Route::get('query/builder', function () {
+    $products = DB::table('products')->get();
+    // $products = DB::table('products')->where('price', '>', 100)->get();
+    return view('query-test', compact('products'));
+});
+
+Route::get('query/orm', function () {
+    $products = Product::get();
+    // $products = Product::where('price', '>', 100)->get();
+    return view('query-test', compact('products'));
+});
+
+
+Route::get('barchart', function () {    
+    return view('barchart');
+})->name('barchart');
+
+
+
+
+Route::resource('movie', MovieController::class);
+
+Route::get('movie-filter', [MovieController::class,'indexFilter']);
+
+
+
+//หน้าแสดงผล
+Route::get('product-index', function () {
+    $products = Product::get();
+    return view('query-test', compact('products'));
+})->name("product.index");
+
+//หน้ากรอกฟอม
+Route::get('product-form', function () {    
+    return view('product-form');
+})->name("product.form");
+
+
+Route::post('/product-submit', function (Request $request) {    
+    $data = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'required|string',
+        'price' => 'required|numeric|min:0',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ]);    
+
+    // ตรวจสอบว่ามีการอัปโหลดรูปภาพ
+    if ($request->hasFile('image')) {
+        $imagePath = $request->file('image')->store('uploads', 'public');
+        $url = Storage::url($imagePath);
+        $data["image"] =$url;
+    }
+
+    // บันทึกข้อมูลในฐานข้อมูล
+    Product::create($data);
+
+    return redirect()->route('product.index')->with('success', 'เพิ่มสินค้าแล้ว!');
+})->name('product.submit');
+
+
+
+use App\Http\Controllers\ReviewController;
+
+Route::get('/reviews/create', [ReviewController::class, 'create'])->name('reviews.create');
+Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+
+
+
+
+
+
+
 
 
 
